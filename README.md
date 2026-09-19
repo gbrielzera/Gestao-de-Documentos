@@ -67,7 +67,7 @@ Com o back-end rodando, basta abrir o arquivo `frontend/index.html` diretamente 
 
 ## Link de deploy
 
-_[LINK]_
+_https://gbrielzera.pythonanywhere.com/_
 
 ## Justificativa da arquitetura em pastas separadas
 
