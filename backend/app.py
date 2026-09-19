@@ -6,7 +6,7 @@ da pasta de uploads e do banco de dados, e registra as rotas da API.
 
 import os
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 
 from config import MAX_CONTENT_LENGTH, UPLOAD_FOLDER
@@ -27,6 +27,21 @@ def create_app() -> Flask:
 
     app.register_blueprint(documents_bp)
     app.register_blueprint(comments_bp)
+
+    @app.errorhandler(404)
+    def handle_not_found(error):
+        """Retorna 404 em JSON em vez da página HTML padrão do Flask."""
+        return jsonify({"error": "Recurso não encontrado."}), 404
+
+    @app.errorhandler(500)
+    def handle_internal_error(error):
+        """Retorna 500 em JSON em vez da página HTML padrão do Flask.
+
+        Com debug=True, exceções não tratadas abrem o debugger interativo do
+        Werkzeug em vez de passar por aqui; este handler cobre modo produção
+        (debug=False) e erros levantados explicitamente com abort(500).
+        """
+        return jsonify({"error": "Erro interno do servidor."}), 500
 
     return app
 

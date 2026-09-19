@@ -57,3 +57,18 @@ def update_comment(document_id: int, comment_id: int):
     models.update_comment(comment_id, text)
     updated_comment = models.get_comment_by_id(comment_id)
     return jsonify(updated_comment), 200
+
+
+@comments_bp.route("/<int:document_id>/comments/<int:comment_id>", methods=["DELETE"])
+def delete_comment(document_id: int, comment_id: int):
+    """Remove um comentário de um documento."""
+    document = models.get_document_by_id(document_id)
+    if document is None:
+        return jsonify({"error": "Documento não encontrado."}), 404
+
+    comment = models.get_comment_by_id(comment_id)
+    if comment is None or comment["document_id"] != document_id:
+        return jsonify({"error": "Comentário não encontrado."}), 404
+
+    models.delete_comment(comment_id)
+    return "", 204

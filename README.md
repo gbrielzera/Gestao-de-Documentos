@@ -1,13 +1,14 @@
 # Gestão de Documentos
 
-Aplicação web simples para upload, listagem, visualização, download, edição e comentários de documentos (PDF, JPG e PNG). Projeto desenvolvido como teste prático de estágio.
+Aplicação web simples para upload, listagem, visualização, download, edição, exclusão e comentários de documentos (PDF, JPG e PNG). Projeto desenvolvido como teste prático de estágio.
 
 ## Funcionalidades
 
 - **Upload de documentos**: envio de arquivos PDF, JPG ou PNG, com título obrigatório e descrição opcional.
 - **Listagem de documentos**: exibição de título, data de upload e botões de visualização e download.
-- **Edição de documentos**: alteração do título, da descrição e substituição do arquivo de um documento já enviado.
-- **Comentários**: histórico de comentários textuais por documento, com data e hora registradas automaticamente, incluindo edição do texto de comentários já publicados.
+- **Edição e exclusão de documentos**: alteração do título, da descrição e substituição do arquivo de um documento já enviado, ou remoção completa (arquivo físico, metadados e comentários), com confirmação antes de excluir.
+- **Comentários**: histórico de comentários textuais por documento, com data e hora registradas automaticamente, incluindo edição e exclusão (com confirmação) de comentários já publicados.
+- **Feedback de carregamento**: botões de envio/salvar ficam desabilitados e exibem um texto indicativo ("Enviando...", "Salvando...", "Excluindo...") enquanto a requisição está em andamento.
 
 ## Tecnologias utilizadas
 

@@ -93,6 +93,15 @@ def update_document(
     connection.close()
 
 
+def delete_document(document_id: int) -> None:
+    """Remove um documento do banco (os comentários são removidos em cascata)."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+    connection.commit()
+    connection.close()
+
+
 def create_comment(document_id: int, text: str) -> int:
     """Insere um novo comentário associado a um documento e retorna o id gerado."""
     created_at = datetime.now().isoformat(timespec="seconds")
@@ -151,5 +160,14 @@ def update_comment(comment_id: int, text: str) -> None:
         "UPDATE comments SET text = ? WHERE id = ?",
         (text, comment_id),
     )
+    connection.commit()
+    connection.close()
+
+
+def delete_comment(comment_id: int) -> None:
+    """Remove um comentário do banco de dados."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM comments WHERE id = ?", (comment_id,))
     connection.commit()
     connection.close()

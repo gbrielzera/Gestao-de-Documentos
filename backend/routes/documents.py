@@ -114,6 +114,21 @@ def update_document(document_id: int):
     return jsonify(updated_document), 200
 
 
+@documents_bp.route("/<int:document_id>", methods=["DELETE"])
+def delete_document(document_id: int):
+    """Remove um documento, seu arquivo físico e os comentários associados."""
+    document = models.get_document_by_id(document_id)
+    if document is None:
+        return jsonify({"error": "Documento não encontrado."}), 404
+
+    file_path = os.path.join(UPLOAD_FOLDER, document["stored_filename"])
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    models.delete_document(document_id)
+    return "", 204
+
+
 @documents_bp.route("/<int:document_id>/view", methods=["GET"])
 def view_document(document_id: int):
     """Envia o arquivo para ser exibido diretamente no navegador (inline)."""

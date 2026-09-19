@@ -2,6 +2,13 @@
   box-sizing: border-box;
 }
 
+/* Garante que o atributo "hidden" sempre oculte o elemento, mesmo quando
+   outra regra abaixo define "display" (ex: display: flex) para o mesmo
+   elemento — sem isso, "hidden" seria ignorado por essas regras. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
@@ -77,6 +84,11 @@ button:hover {
   background-color: #1f2c39;
 }
 
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .message {
   margin-top: 0.75rem;
   font-size: 0.9rem;
@@ -141,6 +153,15 @@ button:hover {
   background-color: #dfe4e8;
 }
 
+.danger-btn {
+  color: #c0392b !important;
+  border-color: #e3b3ac !important;
+}
+
+.danger-btn:hover {
+  background-color: #fbeae8 !important;
+}
+
 .comments-section {
   margin-top: 1rem;
   border-top: 1px solid #eee;
@@ -172,7 +193,8 @@ button:hover {
   color: #888;
 }
 
-.edit-comment-btn {
+.edit-comment-btn,
+.delete-comment-btn {
   background: none;
   border: none;
   color: #2c3e50;

@@ -33,6 +33,15 @@ function escapeHtml(value) {
 }
 
 /**
+ * Extrai a mensagem de erro de uma resposta da API (JSON com campo "error"),
+ * com um texto padrão caso a resposta não venha no formato esperado.
+ */
+async function extractErrorMessage(response, fallback) {
+  const data = await response.json().catch(() => null);
+  return (data && data.error) || fallback;
+}
+
+/**
  * Busca todos os documentos na API e atualiza a lista exibida na tela.
  */
 async function loadDocuments() {
@@ -67,7 +76,7 @@ function renderDocuments(documents) {
 
 /**
  * Cria o elemento HTML (card) referente a um único documento, incluindo
- * visualização, download, edição (título, descrição e arquivo) e comentários.
+ * visualização, download, edição, exclusão e comentários.
  */
 function buildDocumentCard(doc) {
   const card = document.createElement("div");
@@ -82,6 +91,7 @@ function buildDocumentCard(doc) {
         <a href="${API_BASE_URL}/documents/${doc.id}/view" target="_blank" rel="noopener">Visualizar</a>
         <a href="${API_BASE_URL}/documents/${doc.id}/download">Download</a>
         <button type="button" class="edit-document-btn">Editar</button>
+        <button type="button" class="delete-document-btn danger-btn">Excluir</button>
         <button type="button" class="toggle-comments-btn">Comentários</button>
       </div>
     </div>
@@ -113,6 +123,7 @@ function buildDocumentCard(doc) {
   const editForm = card.querySelector(".edit-document-form");
   const editButton = card.querySelector(".edit-document-btn");
   const cancelEditButton = card.querySelector(".cancel-edit-document-btn");
+  const deleteButton = card.querySelector(".delete-document-btn");
   const toggleCommentsButton = card.querySelector(".toggle-comments-btn");
   const commentsSection = card.querySelector(".comments-section");
 
@@ -128,6 +139,8 @@ function buildDocumentCard(doc) {
   });
 
   editForm.addEventListener("submit", (event) => handleEditDocumentSubmit(event, doc.id));
+
+  deleteButton.addEventListener("click", () => handleDeleteDocument(doc.id, deleteButton));
 
   toggleCommentsButton.addEventListener("click", () => {
     const isHidden = commentsSection.hasAttribute("hidden");
@@ -150,9 +163,13 @@ async function handleEditDocumentSubmit(event, documentId) {
   event.preventDefault();
 
   const form = event.target;
+  const saveButton = form.querySelector('button[type="submit"]');
   const messageEl = form.querySelector(".edit-message");
+
   messageEl.textContent = "Salvando...";
   messageEl.className = "message edit-message";
+  saveButton.disabled = true;
+  saveButton.textContent = "Salvando...";
 
   try {
     const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
@@ -160,16 +177,44 @@ async function handleEditDocumentSubmit(event, documentId) {
       body: new FormData(form),
     });
 
-    const result = await response.json();
-
     if (!response.ok) {
-      throw new Error(result.error || "Falha ao salvar alterações.");
+      throw new Error(await extractErrorMessage(response, "Falha ao salvar alterações."));
     }
 
     await loadDocuments();
   } catch (error) {
     messageEl.textContent = error.message;
     messageEl.className = "message edit-message error";
+    saveButton.disabled = false;
+    saveButton.textContent = "Salvar";
+  }
+}
+
+/**
+ * Pede confirmação e, se aceita, exclui o documento (arquivo e comentários
+ * associados são removidos em cascata pela API) e recarrega a lista.
+ */
+async function handleDeleteDocument(documentId, deleteButton) {
+  const confirmed = confirm("Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita.");
+  if (!confirmed) {
+    return;
+  }
+
+  deleteButton.disabled = true;
+  deleteButton.textContent = "Excluindo...";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, { method: "DELETE" });
+
+    if (!response.ok) {
+      throw new Error(await extractErrorMessage(response, "Falha ao excluir documento."));
+    }
+
+    await loadDocuments();
+  } catch (error) {
+    alert(`Erro ao excluir documento: ${error.message}`);
+    deleteButton.disabled = false;
+    deleteButton.textContent = "Excluir";
   }
 }
 
@@ -194,8 +239,8 @@ async function loadComments(documentId, commentsSection) {
 }
 
 /**
- * Monta o HTML da lista de comentários (com opção de edição de cada um)
- * e do formulário de novo comentário.
+ * Monta o HTML da lista de comentários (com opção de edição e exclusão de
+ * cada um) e do formulário de novo comentário.
  */
 function renderComments(documentId, comments, commentsSection) {
   const listHtml = comments.length
@@ -207,6 +252,7 @@ function renderComments(documentId, comments, commentsSection) {
                 <span class="comment-text">${escapeHtml(comment.text)}</span>
                 <span class="comment-date">${formatDate(comment.created_at)}</span>
                 <button type="button" class="edit-comment-btn" data-id="${comment.id}">Editar</button>
+                <button type="button" class="delete-comment-btn danger-btn" data-id="${comment.id}">Excluir</button>
               </div>
               <form class="edit-comment-form" data-id="${comment.id}" hidden>
                 <input type="text" name="text" value="${escapeHtml(comment.text)}" required>
@@ -230,6 +276,7 @@ function renderComments(documentId, comments, commentsSection) {
   commentsSection.querySelectorAll(".comment-item").forEach((item) => {
     const viewBlock = item.querySelector(".comment-view");
     const editForm = item.querySelector(".edit-comment-form");
+    const commentId = editForm.dataset.id;
 
     item.querySelector(".edit-comment-btn").addEventListener("click", () => {
       viewBlock.setAttribute("hidden", "");
@@ -241,6 +288,10 @@ function renderComments(documentId, comments, commentsSection) {
       editForm.setAttribute("hidden", "");
       viewBlock.removeAttribute("hidden");
     });
+
+    item.querySelector(".delete-comment-btn").addEventListener("click", (event) =>
+      handleDeleteComment(documentId, commentId, commentsSection, event.target)
+    );
 
     editForm.addEventListener("submit", (event) =>
       handleEditCommentSubmit(event, documentId, commentsSection)
@@ -259,11 +310,16 @@ function renderComments(documentId, comments, commentsSection) {
 async function handleAddComment(event, documentId, commentsSection) {
   event.preventDefault();
 
-  const input = commentsSection.querySelector('.comment-form input[name="text"]');
+  const form = event.target;
+  const submitButton = form.querySelector('button[type="submit"]');
+  const input = form.querySelector('input[name="text"]');
   const text = input.value.trim();
   if (!text) {
     return;
   }
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Enviando...";
 
   try {
     const response = await fetch(`${API_BASE_URL}/documents/${documentId}/comments`, {
@@ -273,12 +329,14 @@ async function handleAddComment(event, documentId, commentsSection) {
     });
 
     if (!response.ok) {
-      throw new Error("Falha ao enviar comentário.");
+      throw new Error(await extractErrorMessage(response, "Falha ao enviar comentário."));
     }
 
     await loadComments(documentId, commentsSection);
   } catch (error) {
     alert(`Erro ao enviar comentário: ${error.message}`);
+    submitButton.disabled = false;
+    submitButton.textContent = "Enviar";
   }
 }
 
@@ -289,11 +347,15 @@ async function handleEditCommentSubmit(event, documentId, commentsSection) {
   event.preventDefault();
 
   const form = event.target;
+  const saveButton = form.querySelector('button[type="submit"]');
   const commentId = form.dataset.id;
   const text = form.querySelector('input[name="text"]').value.trim();
   if (!text) {
     return;
   }
+
+  saveButton.disabled = true;
+  saveButton.textContent = "Salvando...";
 
   try {
     const response = await fetch(`${API_BASE_URL}/documents/${documentId}/comments/${commentId}`, {
@@ -303,12 +365,43 @@ async function handleEditCommentSubmit(event, documentId, commentsSection) {
     });
 
     if (!response.ok) {
-      throw new Error("Falha ao salvar comentário.");
+      throw new Error(await extractErrorMessage(response, "Falha ao salvar comentário."));
     }
 
     await loadComments(documentId, commentsSection);
   } catch (error) {
     alert(`Erro ao salvar comentário: ${error.message}`);
+    saveButton.disabled = false;
+    saveButton.textContent = "Salvar";
+  }
+}
+
+/**
+ * Pede confirmação e, se aceita, exclui um comentário e recarrega a lista.
+ */
+async function handleDeleteComment(documentId, commentId, commentsSection, deleteButton) {
+  const confirmed = confirm("Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita.");
+  if (!confirmed) {
+    return;
+  }
+
+  deleteButton.disabled = true;
+  deleteButton.textContent = "Excluindo...";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/comments/${commentId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error(await extractErrorMessage(response, "Falha ao excluir comentário."));
+    }
+
+    await loadComments(documentId, commentsSection);
+  } catch (error) {
+    alert(`Erro ao excluir comentário: ${error.message}`);
+    deleteButton.disabled = false;
+    deleteButton.textContent = "Excluir";
   }
 }
 
@@ -319,9 +412,13 @@ async function handleEditCommentSubmit(event, documentId, commentsSection) {
 async function handleUploadSubmit(event) {
   event.preventDefault();
 
+  const submitButton = uploadForm.querySelector('button[type="submit"]');
   const formData = new FormData(uploadForm);
+
   uploadMessage.textContent = "Enviando...";
   uploadMessage.className = "message";
+  submitButton.disabled = true;
+  submitButton.textContent = "Enviando...";
 
   try {
     const response = await fetch(`${API_BASE_URL}/documents`, {
@@ -329,10 +426,8 @@ async function handleUploadSubmit(event) {
       body: formData,
     });
 
-    const result = await response.json();
-
     if (!response.ok) {
-      throw new Error(result.error || "Falha ao enviar documento.");
+      throw new Error(await extractErrorMessage(response, "Falha ao enviar documento."));
     }
 
     uploadMessage.textContent = "Documento enviado com sucesso!";
@@ -342,6 +437,9 @@ async function handleUploadSubmit(event) {
   } catch (error) {
     uploadMessage.textContent = error.message;
     uploadMessage.className = "message error";
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Enviar documento";
   }
 }
 
