@@ -4,6 +4,58 @@ const API_BASE_URL = "http://127.0.0.1:5000/api";
 const uploadForm = document.getElementById("upload-form");
 const uploadMessage = document.getElementById("upload-message");
 const documentsList = document.getElementById("documents-list");
+const uploadSpinner = document.getElementById("upload-spinner");
+const searchInput = document.getElementById("search-input");
+
+/**
+ * Converte um tamanho em bytes para um texto legível (ex: "1,5 MB").
+ */
+function formatFileSize(bytes) {
+  if (bytes === null || bytes === undefined) {
+    return "tamanho indisponível";
+  }
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const units = ["KB", "MB", "GB"];
+  let size = bytes / 1024;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  return `${size.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${units[unitIndex]}`;
+}
+
+/**
+ * Normaliza um texto para comparação de busca (sem acentos e em minúsculas).
+ */
+function normalizeText(text) {
+  return String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+/**
+ * Filtra os cards já exibidos pelo texto do campo de busca (por título),
+ * apenas ocultando/exibindo os cards para não perder comentários abertos.
+ */
+function applyFilter() {
+  const query = normalizeText(searchInput.value.trim());
+  const cards = documentsList.querySelectorAll(".document-card");
+  let visibleCount = 0;
+
+  cards.forEach((card) => {
+    const matches = normalizeText(card.dataset.title).includes(query);
+    card.hidden = !matches;
+    if (matches) {
+      visibleCount += 1;
+    }
+  });
+
+  const noResults = documentsList.querySelector(".no-results");
+  if (noResults) {
+    noResults.hidden = cards.length === 0 || visibleCount > 0;
+  }
+}
 
 /**
  * Formata uma data ISO (ex: "2026-09-18T14:30:00") no padrão brasileiro.
@@ -72,6 +124,12 @@ function renderDocuments(documents) {
   documents.forEach((doc) => {
     documentsList.appendChild(buildDocumentCard(doc));
   });
+
+  documentsList.insertAdjacentHTML(
+    "beforeend",
+    '<p class="empty-message no-results" hidden>Nenhum documento encontrado.</p>'
+  );
+  applyFilter();
 }
 
 /**
@@ -81,11 +139,12 @@ function renderDocuments(documents) {
 function buildDocumentCard(doc) {
   const card = document.createElement("div");
   card.className = "document-card";
+  card.dataset.title = doc.title;
 
   card.innerHTML = `
     <div class="document-view">
       <h3>${escapeHtml(doc.title)}</h3>
-      <div class="document-meta">Enviado em ${formatDate(doc.upload_date)}</div>
+      <div class="document-meta">Enviado em ${formatDate(doc.upload_date)} · ${formatFileSize(doc.file_size)}</div>
       ${doc.description ? `<div class="document-description">${escapeHtml(doc.description)}</div>` : ""}
       <div class="document-actions">
         <a href="${API_BASE_URL}/documents/${doc.id}/view" target="_blank" rel="noopener">Visualizar</a>
@@ -419,6 +478,7 @@ async function handleUploadSubmit(event) {
   uploadMessage.className = "message";
   submitButton.disabled = true;
   submitButton.textContent = "Enviando...";
+  uploadSpinner.hidden = false;
 
   try {
     const response = await fetch(`${API_BASE_URL}/documents`, {
@@ -440,9 +500,11 @@ async function handleUploadSubmit(event) {
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "Enviar documento";
+    uploadSpinner.hidden = true;
   }
 }
 
 uploadForm.addEventListener("submit", handleUploadSubmit);
+searchInput.addEventListener("input", applyFilter);
 
 loadDocuments();

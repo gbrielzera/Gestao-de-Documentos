@@ -20,6 +20,16 @@ def is_extension_allowed(filename: str) -> bool:
     return extension in ALLOWED_EXTENSIONS
 
 
+def add_file_size(document: dict) -> dict:
+    """Acrescenta ao documento o campo 'file_size' (em bytes), lido do arquivo em disco.
+
+    Retorna None no campo caso o arquivo físico não exista mais.
+    """
+    file_path = os.path.join(UPLOAD_FOLDER, document["stored_filename"])
+    document["file_size"] = os.path.getsize(file_path) if os.path.exists(file_path) else None
+    return document
+
+
 @documents_bp.route("", methods=["POST"])
 def upload_document():
     """Recebe um arquivo (PDF, JPG ou PNG) com título e descrição opcional,
@@ -56,13 +66,13 @@ def upload_document():
     )
 
     document = models.get_document_by_id(document_id)
-    return jsonify(document), 201
+    return jsonify(add_file_size(document)), 201
 
 
 @documents_bp.route("", methods=["GET"])
 def list_documents():
     """Retorna a lista de todos os documentos cadastrados."""
-    documents = models.get_all_documents()
+    documents = [add_file_size(document) for document in models.get_all_documents()]
     return jsonify(documents), 200
 
 
@@ -111,7 +121,7 @@ def update_document(document_id: int):
     )
 
     updated_document = models.get_document_by_id(document_id)
-    return jsonify(updated_document), 200
+    return jsonify(add_file_size(updated_document)), 200
 
 
 @documents_bp.route("/<int:document_id>", methods=["DELETE"])

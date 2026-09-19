@@ -32,11 +32,13 @@
 
         <button type="submit">Enviar documento</button>
         <p id="upload-message" class="message"></p>
+        <div id="upload-spinner" class="spinner" role="status" aria-label="Enviando" hidden></div>
       </form>
     </section>
 
     <section id="documents-section">
       <h2>Documentos enviados</h2>
+      <input type="text" id="search-input" placeholder="Buscar documento por título..." aria-label="Buscar documento por título">
       <div id="documents-list">
         <p class="empty-message">Carregando documentos...</p>
       </div>
