@@ -2,17 +2,21 @@
 
 Cria a aplicação, habilita CORS para o front-end, garante a existência
 da pasta de uploads e do banco de dados, e registra as rotas da API.
+Também serve o front-end como arquivos estáticos.
 """
 
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 
 from config import MAX_CONTENT_LENGTH, UPLOAD_FOLDER
 from database import init_db
 from routes.comments import comments_bp
 from routes.documents import documents_bp
+
+# Caminho do diretório frontend (irmão do diretório backend)
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 
 def create_app() -> Flask:
@@ -27,6 +31,24 @@ def create_app() -> Flask:
 
     app.register_blueprint(documents_bp)
     app.register_blueprint(comments_bp)
+
+    @app.route("/")
+    def index():
+        """Serve a página index.html do front-end."""
+        index_path = os.path.join(FRONTEND_DIR, "index.html")
+        if os.path.exists(index_path):
+            return send_from_directory(FRONTEND_DIR, "index.html")
+        return jsonify({"error": "Frontend não encontrado."}), 404
+
+    @app.route("/<path:filename>", methods=["GET"])
+    def serve_frontend(filename):
+        """Serve arquivos estáticos (CSS, JS) do front-end."""
+        # Não serve diretórios, apenas arquivos específicos de css/ e js/
+        if filename.startswith(("css/", "js/")):
+            file_path = os.path.join(FRONTEND_DIR, filename)
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                return send_from_directory(FRONTEND_DIR, filename)
+        return jsonify({"error": "Recurso não encontrado."}), 404
 
     @app.errorhandler(404)
     def handle_not_found(error):

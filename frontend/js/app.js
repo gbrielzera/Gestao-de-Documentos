@@ -1,5 +1,9 @@
 // Endereço base da API do back-end Flask
-const API_BASE_URL = "http://127.0.0.1:5000/api";
+// Em produção, usa a mesma origem da página (PythonAnywhere)
+// Em desenvolvimento local, usa localhost:5000
+const API_BASE_URL = window.location.hostname === "localhost"
+  ? "http://127.0.0.1:5000/api"
+  : "/api";
 
 const uploadForm = document.getElementById("upload-form");
 const uploadMessage = document.getElementById("upload-message");
