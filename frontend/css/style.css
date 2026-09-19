@@ -155,11 +155,44 @@ button:hover {
   font-size: 0.88rem;
 }
 
+.comment-view {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.comment-text {
+  flex: 1;
+  min-width: 150px;
+}
+
 .comment-date {
-  display: block;
   font-size: 0.75rem;
   color: #888;
-  margin-top: 0.2rem;
+}
+
+.edit-comment-btn {
+  background: none;
+  border: none;
+  color: #2c3e50;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.edit-comment-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.edit-comment-form input {
+  flex: 1;
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 .comment-form {
@@ -173,4 +206,25 @@ button:hover {
   padding: 0.4rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.edit-document-form {
+  margin-top: 0.75rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-actions .cancel-edit-document-btn,
+.cancel-edit-comment-btn {
+  background-color: transparent;
+  color: #555;
+  border: 1px solid #ccc;
+}
+
+.edit-actions .cancel-edit-document-btn:hover,
+.cancel-edit-comment-btn:hover {
+  background-color: #f0f0f0;
 }

@@ -70,6 +70,29 @@ def get_document_by_id(document_id: int) -> Optional[dict[str, Any]]:
     return dict(row) if row else None
 
 
+def update_document(
+    document_id: int,
+    title: str,
+    description: Optional[str],
+    original_filename: str,
+    stored_filename: str,
+    file_type: str,
+) -> None:
+    """Atualiza título, descrição e arquivo de um documento existente."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+        UPDATE documents
+        SET title = ?, description = ?, original_filename = ?, stored_filename = ?, file_type = ?
+        WHERE id = ?
+        """,
+        (title, description, original_filename, stored_filename, file_type, document_id),
+    )
+    connection.commit()
+    connection.close()
+
+
 def create_comment(document_id: int, text: str) -> int:
     """Insere um novo comentário associado a um documento e retorna o id gerado."""
     created_at = datetime.now().isoformat(timespec="seconds")
@@ -105,3 +128,28 @@ def get_comments_by_document(document_id: int) -> list[dict[str, Any]]:
     rows = cursor.fetchall()
     connection.close()
     return [dict(row) for row in rows]
+
+
+def get_comment_by_id(comment_id: int) -> Optional[dict[str, Any]]:
+    """Busca um comentário pelo id. Retorna None se não encontrado."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "SELECT id, document_id, text, created_at FROM comments WHERE id = ?",
+        (comment_id,),
+    )
+    row = cursor.fetchone()
+    connection.close()
+    return dict(row) if row else None
+
+
+def update_comment(comment_id: int, text: str) -> None:
+    """Atualiza o texto de um comentário existente."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "UPDATE comments SET text = ? WHERE id = ?",
+        (text, comment_id),
+    )
+    connection.commit()
+    connection.close()
