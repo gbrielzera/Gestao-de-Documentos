@@ -16,7 +16,8 @@ from routes.comments import comments_bp
 from routes.documents import documents_bp
 
 # Caminho do diretório frontend (irmão do diretório backend)
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(BACKEND_DIR, "..", "frontend"))
 
 
 def create_app() -> Flask:
