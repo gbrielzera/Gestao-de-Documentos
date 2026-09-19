@@ -1,0 +1,27 @@
+# Claude Code configurações locais
+.claude/
+
+# Ambiente virtual Python
+backend/venv/
+backend/env/
+
+# Banco de dados SQLite gerado em tempo de execução
+backend/database.db
+
+# Arquivos enviados pelos usuários
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE e editor
+.vscode/
+.idea/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+.env
